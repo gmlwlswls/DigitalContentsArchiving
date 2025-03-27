@@ -48,12 +48,20 @@ class DigitalContentsArchiving() :
 
       def extract_country_keyword(file_name):
               """ 파일명에서 사용 국가 키워드 추출 """
-              keywords = ['중국용', '국내중국겸용', '국내용', '중국']  # 우선순위 높은 순서로 정렬
+              keywords = ['국내', '국내용', '중국', '중국용', '국내중국겸용', 
+                          '북미용', '북미', '유럽', '유럽용', '베트남', '베트남용']  # 우선순위 높은 순서로 정렬
               for keyword in keywords:
                   if keyword in file_name:
                       return f"_{keyword}"
               return ""
-
+      
+      def extract_dozen_keyword(file_name) :
+              keywords= ['복수']
+              for keyword in keywords :
+                if keyword in file_name :
+                  return f"_{keyword}"
+              return ''
+          
       file_dates = {}  # 중복 방지용 딕셔너리
 
       for root, _, files in os.walk(product_name_folder_path):
@@ -74,8 +82,11 @@ class DigitalContentsArchiving() :
               # 사용 국가 키워드 추출
               country_suffix = extract_country_keyword(file)
 
+              # 복수 제품 키워드 추출
+              dozen_suffix = extract_dozen_keyword(file)
+
               # 새로운 파일명 생성
-              new_name = f"{doc_number}_{product_name}{volume_suffix}_{folder_name}_{mod_time}{country_suffix}"
+              new_name = f"{doc_number}_{product_name}{volume_suffix}_{folder_name}_{mod_time}{country_suffix}{dozen_suffix}"
 
               ext = os.path.splitext(file)[1]
               count = file_dates.get(new_name, 0) + 1
@@ -100,33 +111,39 @@ class DigitalContentsArchiving() :
                 product_name_path = os.path.join(product_line_path, product_name)
                 print(f"Renaming: {product_name}")
                 self.__renamefoldertreeHelp(product_name_path, product_name)
-  
-  def __removeDocNumHelp(self, root_dir):
-    """
-    파일명 앞의 문서번호 (예: DOC001_) 를 제거하고 이름 변경
-    """
-    renamed_count = 0
 
-    for folder_path, _, files in os.walk(root_dir):
-        for file in files:
+  def __removeDocNumHelp(self, root_dir):
+     """
+     파일명 앞의 문서번호 (예: DOC001_) 를 제거하고
+     같은 이름 존재 시 _(1), _(2) ... 붙여 중복 방지
+     """
+     renamed_count = 0
+     
+     for folder_path, _, files in os.walk(root_dir):
+         for file in files:
             # 정규표현식으로 DOCxxx_ 패턴 추출
             match = re.match(r'^(DOC\d+_)(.+)', file)
             if match:
                 doc_prefix, rest_of_name = match.groups()
                 old_path = os.path.join(folder_path, file)
+                
+                base_name, ext = os.path.splitext(rest_of_name)
                 new_path = os.path.join(folder_path, rest_of_name)
+                counter = 1
 
-                # 같은 이름 파일 존재 시 덮어쓰기 방지
-                if not os.path.exists(new_path):
-                    os.rename(old_path, new_path)
-                    renamed_count += 1
-                    print(f"🔁 Renamed: {file} → {rest_of_name}")
-                else:
-                    print(f"⚠️ 이미 존재해서 건너뜀: {rest_of_name}")
-    
-    print(f"✅ 문서번호 제거 완료: 총 {renamed_count}개 파일 이름 변경됨")
+                # 파일명이 이미 존재하면 _(1), _(2) 붙여서 충돌 방지
+                while os.path.exists(new_path):
+                    new_name = f"{base_name}_({counter}){ext}"
+                    new_path = os.path.join(folder_path, new_name)
+                    counter += 1
 
-  def removeDocNum(self):
+                os.rename(old_path, new_path)
+                renamed_count += 1
+                print(f"🔁 Renamed: {file} → {os.path.basename(new_path)}")
+     print(f"✅ 문서번호 제거 완료: 총 {renamed_count}개 파일 이름 변경됨")
+
+
+  def removeDocNum(self): # DocNum 제거 후 파일명 동일한 경우 (1) (2)
       for product_line in os.listdir(self.base_path):
         product_line_path = os.path.join(self.base_path, product_line)
         
