@@ -50,10 +50,10 @@ class DigitalContentsArchiving() :
               """ 파일명에서 사용 국가 키워드 추출 """
               keywords = ['국내', '국내용', '중국', '중국용', '국내중국겸용', 
                           '북미용', '북미', '유럽', '유럽용', '베트남', '베트남용']  # 우선순위 높은 순서로 정렬
-              for keyword in keywords:
-                  if keyword in file_name:
-                      return f"_{keyword}"
-              return ""
+              
+              country_found = [f"_{kw}" for kw in keywords if kw in file_name]
+
+              return ''.join(country_found) if country_found else ''
       
       def extract_dozen_keyword(file_name) :
               keywords= ['복수']
