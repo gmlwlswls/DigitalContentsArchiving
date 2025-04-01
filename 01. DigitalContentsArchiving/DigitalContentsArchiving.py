@@ -151,7 +151,7 @@ class DigitalContentsArchiving() :
   # 4. 기존 csv파일과 문서 번호 매치한 병합 csv파일 생성
   # - 이사한 데이터 문서 번호 / 파일명 / 폴더 경로 로 csv 파일 생성
   # ** 매치되지 않은 파일은 그대로 > 이사 제외 사유 기입
-  def foldertree_to_csv_merge_by_doc(self, existing_csv_path, output_csv_path_filename =None):
+  def foldertree_to_xlsx_merge_by_doc(self, existing_csv_path, output_xlsx_path_filename =None):
     """
     기존 CSV 파일과 폴더 정보(문서번호/파일명/폴더경로)를 '문서번호' 기준으로 병합하여 저장
 
@@ -184,11 +184,11 @@ class DigitalContentsArchiving() :
     df_merged = pd.merge(existing_csv, df_folder, left_on="문서 번호", right_on= '문서 번호_구글', how="left")
     
     # 저장 경로 지정
-    if not output_csv_path_filename:
-        output_csv_path_filename = os.path.join(root_dir, "merged_naver_google.csv")
+    if not output_xlsx_path_filename:
+        output_xlsx_path_filename = os.path.join(root_dir, "merged_naver_google.csv")
 
-    df_merged.to_csv(output_csv_path_filename, index=False, encoding="cp949")
-    print(f"✅ 병합된 CSV 파일 생성 완료: {output_csv_path_filename}")
+    df_merged.to_excel(output_xlsx_path_filename, index=False)
+    print(f"✅ 병합된 xlsx 파일 생성 완료: {output_xlsx_path_filename}")
 
   def __removeDocNumHelp(self, root_dir):
      """
