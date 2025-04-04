@@ -84,7 +84,7 @@ class DigitalContentsArchiving() :
 
   # 3. 로컬 이사 완료 후 폴더트리 내 변수명 변경
   # 문서 번호_제품명_용량_상위 폴더명_최종 수정일
-  def __renamefoldertreeHelp(self, product_name_folder_path, product_name):
+  def __renamefoldertreeHelp(self, product_type_path, product_name):
       def extract_volume_info(file_name):
           """ 파일명에서 '100ml', '200g' 같은 정보를 추출 """
           match = re.search(r'(\d+(?:ml|g))', file_name)
@@ -102,7 +102,7 @@ class DigitalContentsArchiving() :
           
       file_dates = {}  # 중복 방지용 딕셔너리
 
-      for root, _, files in os.walk(product_name_folder_path):
+      for root, _, files in os.walk(product_type_path):
           folder_name = os.path.basename(root)
 
           for file in sorted(files):
@@ -144,8 +144,11 @@ class DigitalContentsArchiving() :
         if os.path.isdir(product_line_path):
             for product_name in os.listdir(product_line_path):
                 product_name_path = os.path.join(product_line_path, product_name)
-                print(f"Renaming: {product_name}")
-                self.__renamefoldertreeHelp(product_name_path, product_name)\
+                if os.path.isdir(product_name_path) :
+                    for product_type in os.listdir(product_name_path) :
+                        product_type_path = os.path.join(product_name_path, product_type)
+                        self.__renamefoldertreeHelp(product_type_path, product_name)
+                        print(f"Renaming: {product_name}")
 
 
   # 4. 기존 csv파일과 문서 번호 매치한 병합 csv파일 생성
