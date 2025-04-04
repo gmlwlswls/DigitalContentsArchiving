@@ -1,3 +1,6 @@
+# 제품 타입 결정되면 수정되야할 사항
+# 1,2,3과 4,5,6 나눈 별도의 파일명 변경 함수 필요
+
 import pandas as pd
 import os, datetime, re
 
@@ -5,55 +8,60 @@ class DigitalContentsArchiving() :
   def __init__(self, brandname_directory_path):
     self.base_path = brandname_directory_path
   
-  # 1. 네이버 드라이브 파일 - 파일명 변환(생략)
-  # 문서 번호 | (구)파일명 | 확장자 | 최종 업로드일 | 용량(MB) | 폴더 경로 
-  def generate_DocNum_dataframe(self, naver_drive_directory, start_doc_num=1):
-    """
-    지정된 디렉토리 내 모든 파일에 대해 문서 번호를 부여하고
-    파일 정보를 포함한 데이터프레임을 반환
-
-    Parameters:
-    - target_directory (str): 검색할 폴더 경로
-    - start_doc_num (int): 문서 번호 시작 값 (예: 1이면 DOC00001부터 시작)
-
-    Returns:
-    - pandas.DataFrame: 열 - 문서 번호, (구)파일명, 확장자, 최종 업로드일, 용량, 폴더 경로
-    """
+  # 1. 네이버 드라이브 파일 - 파일명 변환 & 데이터프레임 생성
+  # 문서 번호 | (구)파일명 | 확장자 | 최종 업로드일 | 용량(MB) | 폴더 경로   
+  def assignDocNum_and_dataframe(self, naver_drive_path, start_doc_number):
+    """ 동일한 파일명, 확장자, 최종 수정일 기준으로 동일한 DOC 번호 부여 """
+    doc_counter = start_doc_number
+    seen_files = dict()  # {(파일명, 확장자, 수정일): DOC 번호}
     allowed_exts = {'.jpg', '.psd', '.png', '.ai', '.mp4', '.pdf', '.ssg', '.gif', '.fig'}
     data = []
-    doc_counter = start_doc_num
 
-    for root, _, files in os.walk(naver_drive_directory):
+    # 네이버 드라이브 내 문서 번호 부여
+    for root, _, files in os.walk(naver_drive_path):
         for file in sorted(files):
-            file_path = os.path.join(root, file)
-            file_name, file_ext = os.path.splitext(file)
-            file_ext = file_ext.lower()
-            if file_ext not in allowed_exts :
+             # 이미 DOCx_ 형식이면 건너뜀
+            if re.match(r'DOC\d+_', file):
                 continue
 
+            file_path = os.path.join(root, file)
+            file_name, ext = os.path.splitext(file)
+            ext = ext.lower()
+            if ext not in allowed_exts :
+                continue
             mod_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path)).strftime('%Y-%m-%d')
-            file_size_kb = os.path.getsize(file_path) / (1024 ** 2)
-            file_size_str = f"{file_size_kb:.2f} MB"
+            file_size_mb = os.path.getsize(file_path) / (1024 ** 2)
+            file_size_str = f"{file_size_mb:.2f}"
+
+            file_key = (file_name, ext, mod_time) # (파일명, 확장자, 최종 업로드일)
+
+            if file_key in seen_files:
+                doc_num = seen_files[file_key]
+            else:
+                doc_num = doc_counter
+                seen_files[file_key] = doc_num
+                doc_counter += 1
+
+            new_file_name = f"DOC{doc_num:05d}_{file}"
+            new_path = os.path.join(root, new_file_name)
+
+            os.rename(file_path, new_path)
 
             data.append({
-                '(구)파일명': file,
-                '확장자': file_ext,
-                '최종 업로드일': mod_time,
-                '용량(MB)': file_size_str,
-                '폴더 경로': root
+                "문서 번호": new_file_name,
+                '(구)파일명' : file,
+                '확장자' : ext,
+                '최종 업로드일' : mod_time,
+                '용량(MB)' : file_size_str,
+                '폴더 경로' : root
             })
-    
+    # 데이터 프레임 반환
     df = pd.DataFrame(data)
-    df = df.drop_duplicates(subset='(구)파일명', keep= 'first').reset_index(drop=True)
-
-    df.insert(0, '문서 번호', [f'DOC{num:05}' for num in range(start_doc_num, start_doc_num + len(df))])
-
-    print(f"✅ 총 {len(df)}개의 파일이 문서 번호와 함께 데이터프레임으로 저장되었습니다.")
     return df
   
   # 2. 네이버 드라이브 폴더 내 파일명 변환
   # 문서 번호_파일명
-  def rename_files_with_docnum(self, naver_drive_csv_path , naver_drive_directory):
+  def rename_files_with_docnum(self, df, naver_drive_directory): # naver_drive_csv_path, 
     """
     주어진 데이터프레임을 기준으로 파일명을 '문서번호_파일명' 형식으로 변경
 
@@ -62,8 +70,7 @@ class DigitalContentsArchiving() :
     - naver_drive_directory (str): 변경할 파일이 존재하는 폴더 경로
     """
     
-    df = pd.read_csv(naver_drive_csv_path, encoding= 'cp949')
-
+    # df = pd.read_csv(naver_drive_csv_path, encoding= 'cp949')
     for idx, row in df.iterrows():
         doc_num = str(row['문서 번호']).strip() if pd.notnull(row['문서 번호']) else ''
         file_name = str(row['(구)파일명']).strip() if pd.notnull(row['(구)파일명']) else ''
@@ -81,10 +88,13 @@ class DigitalContentsArchiving() :
                         print(f"✅ Renamed: {original_path} -> {new_path}")
                     else:
                         print(f"⚠️ Skipped (already exists): {new_path}") # 이름이 동일한 경우   
+                        
 
   # 3. 로컬 이사 완료 후 폴더트리 내 변수명 변경
   # 문서 번호_제품명_용량_상위 폴더명_최종 수정일
-  def __renamefoldertreeHelp(self, product_type_path, product_name):
+
+  # 3-1. 제품 폴더 변수명 변경
+  def __renameProductHelp(self, product_type_path, product_name):
       def extract_volume_info(file_name):
           """ 파일명에서 '100ml', '200g' 같은 정보를 추출 """
           match = re.search(r'(\d+(?:ml|g))', file_name)
@@ -131,14 +141,17 @@ class DigitalContentsArchiving() :
               new_path = os.path.join(root, new_file_name)
               os.rename(src_path, new_path)
   
-  def renamefoldertree(self):
+  def renameProduct(self):
     for product_line in os.listdir(self.base_path):
         product_line_path = os.path.join(self.base_path, product_line)
   
-        # "0_BrandAsset" 폴더는 건너뛰기
-        if product_line == "0_BrandAsset":
+        # "0_BrandAsset" 폴더 & "1_EditionSet"는 건너뛰기
+        if product_line == "0_BrandAsset_브랜드자산":
             print(f"Skipping brand asset folder: {product_line}")
             continue
+
+        if product_line == '1_EditionSet_기획세트' :
+            print(f'Skipping EditionSet folder : {product_line}')
           
         # ProductLine 폴더 내 ProductName 폴더 찾기
         if os.path.isdir(product_line_path):
@@ -147,8 +160,81 @@ class DigitalContentsArchiving() :
                 if os.path.isdir(product_name_path) :
                     for product_type in os.listdir(product_name_path) :
                         product_type_path = os.path.join(product_name_path, product_type)
-                        self.__renamefoldertreeHelp(product_type_path, product_name)
+                        self.__renameProductHelp(product_type_path, product_name)
                         print(f"Renaming: {product_name}")
+
+# 3-2. 기획 세트 폴더 변수명 변경
+  def __renameEditionHelp(self, edition_type_path, edition_type):
+      def extract_volume_info(file_name):
+          """ 파일명에서 '100ml', '200g' 같은 정보를 추출 """
+          match = re.search(r'(\d+(?:ml|g))', file_name)
+          return match.group(1) if match else ""
+
+      def extract_country_keyword(file_name):
+              """ 파일명에서 사용 국가 키워드 추출 """
+              keywords = ['국내', '국내용', '중국', '중국용', '국내중국겸용', '일본', '일본용'
+                          '미국', '북미', '북미용', '유럽', '유럽용', '베트남', '베트남용',
+                          '동남아', '동남아시아', '동남아시아용']  # 우선순위 높은 순서로 정렬
+              
+              country_found = [f"_{kw}" for kw in keywords if kw in file_name]
+
+              return ''.join(country_found) if country_found else ''
+          
+      file_dates = {}  # 중복 방지용 딕셔너리
+
+      for root, _, files in os.walk(edition_type_path):
+          folder_name = os.path.basename(root)
+
+          for file in sorted(files):
+              src_path = os.path.join(root, file)
+              mod_time = datetime.datetime.fromtimestamp(os.path.getmtime(src_path)).strftime('%Y%m%d')
+
+              # 기존 파일명에서 DOCx_ 문서번호 추출
+              doc_match = re.match(r'(DOC\d+)_', file)
+              doc_number = doc_match.group(1) if doc_match else ""
+
+              # 파일명에서 용량 정보 추출
+              volume_info = extract_volume_info(file)
+              volume_suffix = f"_{volume_info}" if volume_info else ""
+
+              # 사용 국가 키워드 추출
+              country_suffix = extract_country_keyword(file)
+
+              # 새로운 파일명 생성
+              new_name = f"{doc_number}_{edition_type}{volume_suffix}_{folder_name}_{mod_time}{country_suffix}"
+
+              ext = os.path.splitext(file)[1]
+              count = file_dates.get(new_name, 0) + 1
+              file_dates[new_name] = count
+              new_file_name = f"{new_name}_{count}{ext}" if count > 1 else f"{new_name}{ext}"
+
+              new_path = os.path.join(root, new_file_name)
+              os.rename(src_path, new_path)
+  
+  def renameEdition(self):
+    for product_line in os.listdir(self.base_path):
+        product_line_path = os.path.join(self.base_path, product_line)
+  
+        # "0_BrandAsset" 폴더 & "1_EditionSet"는 건너뛰기
+        if product_line == "0_BrandAsset_브랜드자산":
+            print(f"Skipping brand asset folder: {product_line}")
+            continue
+
+        # "1_EditionSet_기획세트"만 작업
+        if product_line == '1_EditionSet_기획세트' :   
+            # EditionSet 폴더 내 Year(연도) 폴더 찾기
+            if os.path.isdir(product_line_path):
+                for year in os.listdir(product_line_path):
+                    year_path = os.path.join(product_line_path, year)
+                    if os.path.isdir(year_path) :
+                        for plan_type in os.listdir(year_path) : # 채널 / 시즌
+                            plan_type_path = os.path.join(year_path, plan_type)
+                            if os.path.isdir(plan_type_path) :
+                                for edition_type in os.listdir(plan_type_path) :
+                                    edition_type_path = os.path.join(plan_type_path, edition_type)
+                                    self.__renameEditionHelp(edition_type_path, edition_type)
+                                    print(f"Renaming: {edition_type}") 
+
 
 
   # 4. 기존 csv파일과 문서 번호 매치한 병합 csv파일 생성
@@ -192,7 +278,8 @@ class DigitalContentsArchiving() :
 
     df_merged.to_excel(output_xlsx_path_filename, index=False)
     print(f"✅ 병합된 xlsx 파일 생성 완료: {output_xlsx_path_filename}")
-
+  
+  # 5. 최종 업로드 전 문서 번호 제거
   def __removeDocNumHelp(self, root_dir):
      """
      파일명 앞의 문서번호 (예: DOC00001_) 를 제거하고
@@ -222,8 +309,6 @@ class DigitalContentsArchiving() :
                 renamed_count += 1
                 print(f"🔁 Renamed: {file} → {os.path.basename(new_path)}")
      print(f"✅ 문서번호 제거 완료: 총 {renamed_count}개 파일 이름 변경됨")
-
-  # 5. 이사한 파일에서 문서 번호 제거
   
   def removeDocNum(self): # DocNum 제거 후 파일명 동일한 경우 (1) (2)
       for product_line in os.listdir(self.base_path):
@@ -240,3 +325,40 @@ class DigitalContentsArchiving() :
                 product_name_path = os.path.join(product_line_path, product_name)
                 print(f"Removing_DocNum: {product_name}")
                 self.__removeDocNumHelp(product_name_path)
+
+#   # 문서 번호 복원 원할 경우 - 테스트 필요
+# def restore_original_filenames(self, merged_naver_google_xlsx_path):
+#     """
+#     문서번호 제거 및 원래 파일명 복원
+#     mapping_csv_path: (문서 번호, (구)파일명, 폴더 경로) 정보가 담긴 csv
+#     """
+#     df = pd.read_excel(merged_naver_google_xlsx_path, index = False)
+#     restored_count = 0
+
+#     for _, row in df.iterrows():
+#         doc_num = str(row['문서 번호']).strip()
+#         old_name = str(row['(구)파일명']).strip()
+#         folder_path = row['폴더 경로'].strip()
+        
+#         # 현재 파일명 (문서번호로 시작하는 파일)
+#         current_file_pattern = f"{doc_num}_{old_name}"
+#         current_path = os.path.join(folder_path, current_file_pattern)
+
+#         if os.path.exists(current_path):
+#             new_path = os.path.join(folder_path, old_name)
+#             counter = 1
+
+#             # 중복 방지용 이름 만들기
+#             while os.path.exists(new_path):
+#                 base, ext = os.path.splitext(old_name)
+#                 new_name = f"{base}_({counter}){ext}"
+#                 new_path = os.path.join(folder_path, new_name)
+#                 counter += 1
+
+#             os.rename(current_path, new_path)
+#             restored_count += 1
+#             print(f"🔁 Restored: {current_file_pattern} → {os.path.basename(new_path)}")
+#         else:
+#             print(f"⚠️ 파일 없음: {current_file_pattern}")
+
+#     print(f"✅ 원래 파일명 복원 완료: 총 {restored_count}개 파일 변경됨")

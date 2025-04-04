@@ -4,52 +4,59 @@ import os, datetime, re
 class DigitalContentsArchiving() :
   def __init__(self, brandname_directory_path):
     self.base_path = brandname_directory_path
-  
-  # 1. 네이버 드라이브 파일 - 파일명 변환(생략)
-  # 문서 번호 | (구)파일명 | 확장자 | 최종 업로드일 | 용량(MB) | 폴더 경로 
-  def generate_DocNum_dataframe(self, naver_drive_directory, start_doc_num=1):
-    """
-    지정된 디렉토리 내 모든 파일에 대해 문서 번호를 부여하고
-    파일 정보를 포함한 데이터프레임을 반환
 
-    Parameters:
-    - target_directory (str): 검색할 폴더 경로
-    - start_doc_num (int): 문서 번호 시작 값 (예: 1이면 DOC00001부터 시작)
-
-    Returns:
-    - pandas.DataFrame: 열 - 문서 번호, (구)파일명, 확장자, 최종 업로드일, 용량, 폴더 경로
-    """
+  # 1. 네이버 드라이브 파일 - 파일명 변환 & 데이터프레임 생성
+  # 문서 번호 | (구)파일명 | 확장자 | 최종 업로드일 | 용량(MB) | 폴더 경로   
+  def assign_DocNum_Help(self, naver_drive_path, start_doc_number):
+    """ 동일한 파일명, 확장자, 최종 수정일 기준으로 동일한 DOC 번호 부여 """
+    doc_counter = start_doc_number
+    seen_files = dict()  # {(파일명, 확장자, 수정일): DOC 번호}
     allowed_exts = {'.jpg', '.psd', '.png', '.ai', '.mp4', '.pdf', '.ssg', '.gif', '.fig'}
     data = []
-    doc_counter = start_doc_num
 
-    for root, _, files in os.walk(naver_drive_directory):
+    # 네이버 드라이브 내 문서 번호 부여
+    for root, _, files in os.walk(naver_drive_path):
         for file in sorted(files):
-            file_path = os.path.join(root, file)
-            file_name, file_ext = os.path.splitext(file)
-            file_ext = file_ext.lower()
-            if file_ext not in allowed_exts :
+             # 이미 DOCx_ 형식이면 건너뜀
+            if re.match(r'DOC\d+_', file):
                 continue
 
+            file_path = os.path.join(root, file)
+            file_name, ext = os.path.splitext(file)
+            ext = ext.lower()
+            if ext not in allowed_exts :
+                continue
             mod_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path)).strftime('%Y-%m-%d')
-            file_size_kb = os.path.getsize(file_path) / (1024 ** 2)
-            file_size_str = f"{file_size_kb:.2f} MB"
+            file_size_mb = os.path.getsize(file_path) / (1024 ** 2)
+            file_size_str = f"{file_size_mb:.2f}"
+
+            file_key = (file_name, ext, mod_time) # (파일명, 확장자, 최종 업로드일)
+
+            if file_key in seen_files:
+                doc_num = seen_files[file_key]
+            else:
+                doc_num = doc_counter
+                seen_files[file_key] = doc_num
+                doc_counter += 1
+
+            new_file_name = f"DOC{doc_num:05d}_{file}"
+            new_path = os.path.join(root, new_file_name)
+
+            os.rename(file_path, new_path)
 
             data.append({
-                '(구)파일명': file,
-                '확장자': file_ext,
-                '최종 업로드일': mod_time,
-                '용량(MB)': file_size_str,
-                '폴더 경로': root
+                "문서 번호": new_file_name,
+                '(구)파일명' : file,
+                '확장자' : ext,
+                '최종 업로드일' : mod_time,
+                '용량(MB)' : file_size_mb,
+                '폴더 경로' : root
             })
-    
+
+    # 데이터 프레임 반환
     df = pd.DataFrame(data)
-    df = df.drop_duplicates(subset='(구)파일명', keep= 'first').reset_index(drop=True)
-
-    df.insert(0, '문서 번호', [f'DOC{num:05}' for num in range(start_doc_num, start_doc_num + len(df))])
-
-    print(f"✅ 총 {len(df)}개의 파일이 문서 번호와 함께 데이터프레임으로 저장되었습니다.")
     return df
+
   
   # 2. 네이버 드라이브 폴더 내 파일명 변환
   # 문서 번호_파일명
