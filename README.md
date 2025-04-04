@@ -2,7 +2,7 @@
 ## 📦 Project Structure
 
 <details open>
-<summary>📂 <strong>00. 구글앱스스크립트</strong>
+<summary>📂 <strong>00. 구글앱스스크립트</strong> </summary>
 
 - 📄 <code>GoogleAppsScript.gs</code> : 구글 드라이브 파일 정보를 스프레드시트로 가져오는 스크립트
 </details>
@@ -33,4 +33,23 @@
 
 - 🐍 <code><a href="./01. 디지털컨텐츠아카이빙/DigitalContentsArchiving.py">DigitalContentsArchiving.py</a></code> : 전체 아카이빙 프로세스를 구현한 파이썬 코드  
 - 📘 <code><a href="./01. 디지털컨텐츠아카이빙/Execution.ipynb">Execution.ipynb</a></code> : 폴더 작업별 실행  
+</details>
+
+## 📦 FolderTree
+<details>
+<summary>📂 EditionSet_기획세트</summary>
+<summary>📁 Season_시즌기획</summary>
+- NewYear_설
+- Summer_썸머
+- Gratitude_감사
+- ThanksGiving_추석
+- Holiday_홀리데이
+- AquaBombJumbo_아쿠아밤점보
+- MoisturizingBombJumbo_모이스춰라이징밤점보
+
+<summary>📁 Channel_채널기획</summary>
+- OliveYougn_올리브영
+- TaxFree_면세
+- Overseas_해외
+
 </details>
