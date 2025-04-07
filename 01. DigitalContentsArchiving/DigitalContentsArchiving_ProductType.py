@@ -96,6 +96,11 @@ class DigitalContentsArchiving() :
               new_file_name = f"{new_name}_{count}{ext}" if count > 1 else f"{new_name}{ext}"
 
               new_path = os.path.join(root, new_file_name)
+
+              # 파일이 이미 존재할 경우 삭제하고 덮어쓰기
+              if os.path.exists(new_path) :
+                  os.remove(new_path)
+                  
               os.rename(src_path, new_path)
   
   def rename(self):
