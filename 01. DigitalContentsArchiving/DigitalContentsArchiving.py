@@ -152,7 +152,7 @@ class DigitalContentsArchiving() :
             for product_name in os.listdir(product_line_path):
                 product_name_path = os.path.join(product_line_path, product_name)
                 print(f"Renaming: {product_name}")
-                self.__renamefoldertreeHelp(product_name_path, product_name)\
+                self.__renamefoldertreeHelp(product_name_path, product_name)
 
 
   # 4. 기존 csv파일과 문서 번호 매치한 병합 csv파일 생성
