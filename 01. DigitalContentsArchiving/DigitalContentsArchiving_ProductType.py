@@ -57,6 +57,13 @@ class DigitalContentsArchiving() :
 
               return ''.join(country_found) if country_found else ''
           
+      def extract_dozen_keyword(file_name) :
+                     keywords= ['복수']
+                     for keyword in keywords :
+                       if keyword in file_name :
+                         return f"_{keyword}"
+                     return ''
+      
       file_dates = {}  # 중복 방지용 딕셔너리
 
       for root, _, files in os.walk(product_type_path):
@@ -77,8 +84,11 @@ class DigitalContentsArchiving() :
               # 사용 국가 키워드 추출
               country_suffix = extract_country_keyword(file)
 
+              # 복수 제품 키워드 추출
+              dozen_suffix = extract_dozen_keyword(file)
+              
               # 새로운 파일명 생성
-              new_name = f"{doc_number}_{product_name}{volume_suffix}_{folder_name}_{mod_time}{country_suffix}"
+              new_name = f"{doc_number}_{product_name}{volume_suffix}_{folder_name}_{mod_time}{country_suffix}{dozen_suffix}"
 
               ext = os.path.splitext(file)[1]
               count = file_dates.get(new_name, 0) + 1
