@@ -98,25 +98,21 @@ class DigitalContentsArchiving() :
               new_path = os.path.join(root, new_file_name)
 
               # 파일이 이미 존재할 경우 삭제하고 덮어쓰기
-              if os.path.exists(new_path) :
-                  os.remove(new_path)
-                  
-              os.rename(src_path, new_path)
+              if src_path != new_path:
+                  if os.path.exists(new_path):
+                      os.remove(new_path)
+                  os.rename(src_path, new_path)
   
   def rename(self):
     for product_line in os.listdir(self.base_path):
         product_line_path = os.path.join(self.base_path, product_line)
   
-        # "0_BrandAsset" 폴더 & "1_EditionSet"는 건너뛰기
+        # "0_BrandAsset" 폴더는 건너뛰기
         if product_line == "0_BrandAsset_브랜드자산":
-            # print(f"Skipping brand asset folder: {product_line}")
-            # continue
-            for content_type in os.listdir(product_line_path) :
-                content_type_path = os.path.join(product_line_path, content_type)
-                self.__renameProductHelp(content_type_path, content_type)
-                print(f"Renaming : 0_BrandAsset - {content_type}")    
+            print(f"Skipping brand asset folder: {product_line}")
+            continue
 
-        if product_line == '1_EditionSet_기획세트' :
+        elif product_line == '1_EditionSet_기획세트' :
             if os.path.isdir(product_line_path):
                 for year in os.listdir(product_line_path):
                     year_path = os.path.join(product_line_path, year)
@@ -130,14 +126,19 @@ class DigitalContentsArchiving() :
                                     print(f"Renaming: {edition_type}") 
           
         # ProductLine 폴더 내 ProductName 폴더 찾기
-        if os.path.isdir(product_line_path):
+        elif os.path.isdir(product_line_path):
             for product_name in os.listdir(product_line_path):
                 product_name_path = os.path.join(product_line_path, product_name)
-                if os.path.isdir(product_name_path) :
-                    for product_type in os.listdir(product_name_path) :
-                        product_type_path = os.path.join(product_name_path, product_type)
-                        print(f"Renaming: {product_name}")                        
-                        self.__renameHelp(product_type_path, product_name)
+                print(f"Renaming: {product_name}")
+                self.__renameHelp(product_name_path, product_name)
+                # if os.path.isdir(product_name_path) :
+                #     for product_type in os.listdir(product_name_path) :
+                #         product_type_path = os.path.join(product_name_path, product_type)
+                #         print(f"Renaming: {product_name}")                        
+                #         self.__renameHelp(product_type_path, product_name)
+        ### elif문을 추가안해서 product_line == 0_BrandAsset_브랜드자산"에서 skipping한 후 다음 작업 실행한 것
+        ### 과거에 됐던 이유는 1_EditionSet_기획세트 로직을 처리할 때 또 모든 폴더를 다시 한 번 처리하는 로직이 추가되어서,
+        ### 이미 스킵한 폴더도 다시 타게 되어버린 것
 
 
   # 3. 기존 csv파일과 문서 번호 매치한 병합 csv파일 생성
