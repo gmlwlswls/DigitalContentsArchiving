@@ -58,7 +58,7 @@ class DigitalContentsArchiving() :
               return ''.join(country_found) if country_found else ''
           
       def extract_detail_keyword(file_name) :
-                     keywords= ['복수', '단종']
+                     keywords= ['복수', '단종', '홀리데이', '썸머', 'Holiday', 'Summer', 'holiday', 'summer']
                      for keyword in keywords :
                        if keyword in file_name :
                          return f"_{keyword}"
@@ -96,21 +96,55 @@ class DigitalContentsArchiving() :
               new_file_name = f"{new_name}_{count}{ext}" if count > 1 else f"{new_name}{ext}"
 
               new_path = os.path.join(root, new_file_name)
-
+              
               # 파일이 이미 존재할 경우 삭제하고 덮어쓰기
               if src_path != new_path:
                   if os.path.exists(new_path):
                       os.remove(new_path)
                   os.rename(src_path, new_path)
-  
+              else :
+                  # src_path == new_path인 경우(이름 변경 필요 없음)
+                  pass
+                
   def rename(self):
     for product_line in os.listdir(self.base_path):
         product_line_path = os.path.join(self.base_path, product_line)
   
         # "0_BrandAsset" 폴더는 건너뛰기
         if product_line == "0_BrandAsset_브랜드자산":
-            print(f"Skipping brand asset folder: {product_line}")
-            continue
+            if os.path.isdir(product_line_path) :
+                for basic_asset_type in os.listdir(product_line_path) :
+                    if basic_asset_type == 'Universe' :
+                        pass
+                    else :
+                        basic_asset_path = os.path.join(product_line_path, basic_asset_type)
+                        print(f'Renaming: {basic_asset_type}')
+
+                        file_dates = {}
+                        for root, _, files in os.walk(basic_asset_path):
+                            folder_name = os.path.basename(root)                        
+                            for file in sorted(files):
+                                src_path = os.path.join(root, file)
+                                mod_time = datetime.datetime.fromtimestamp(os.path.getmtime(src_path)).strftime('%Y%m%d')
+                                doc_match = re.match(r'(DOC\d+)_', file)
+                                doc_number = doc_match.group(1) if doc_match else ""
+                                print(doc_number)
+                                new_name = f"{doc_number}_{folder_name}_{mod_time}"
+
+                                ext = os.path.splitext(file)[1]
+                                count = file_dates.get(new_name, 0) + 1
+                                file_dates[new_name] = count
+                                new_file_name = f"{new_name}_{count}{ext}" if count > 1 else f"{new_name}{ext}"
+                                new_path = os.path.join(root, new_file_name)
+
+                                # 파일이 이미 존재할 경우 삭제하고 덮어쓰기
+                                if src_path != new_path:
+                                    if os.path.exists(new_path):
+                                        os.remove(new_path)
+                                    os.rename(src_path, new_path)
+                                else :
+                                    # src_path == new_path인 경우(이름 변경 필요 없음)
+                                    pass
 
         elif product_line == '1_EditionSet_기획세트' :
             if os.path.isdir(product_line_path):
@@ -128,14 +162,21 @@ class DigitalContentsArchiving() :
         # ProductLine 폴더 내 ProductName 폴더 찾기
         elif os.path.isdir(product_line_path):
             for product_name in os.listdir(product_line_path):
-                product_name_path = os.path.join(product_line_path, product_name)
-                print(f"Renaming: {product_name}")
-                self.__renameHelp(product_name_path, product_name)
-                # if os.path.isdir(product_name_path) :
-                #     for product_type in os.listdir(product_name_path) :
-                #         product_type_path = os.path.join(product_name_path, product_type)
-                #         print(f"Renaming: {product_name}")                        
-                #         self.__renameHelp(product_type_path, product_name)
+                if product_name == '1_DiscontinuedProduct_단종제품' :
+                    discontinued_folder_path = os.path.join(product_line_path, product_name)
+                    for discontinued_product_name in os.listdir(discontinued_folder_path) :
+                        print(f"Renaming:", {discontinued_product_name})
+                        discontinued_product_path = os.path.join(discontinued_folder_path, discontinued_product_name)
+                        self.__renameHelp(discontinued_product_path, discontinued_product_name)
+                else :
+                    product_name_path = os.path.join(product_line_path, product_name)
+                    print(f"Renaming: {product_name}")
+                    self.__renameHelp(product_name_path, product_name)
+                    # if os.path.isdir(product_name_path) :
+                    #     for product_type in os.listdir(product_name_path) :
+                    #         product_type_path = os.path.join(product_name_path, product_type)
+                    #         print(f"Renaming: {product_name}")                        
+                    #         self.__renameHelp(product_type_path, product_name)
         ### elif문을 추가안해서 product_line == 0_BrandAsset_브랜드자산"에서 skipping한 후 다음 작업 실행한 것
         ### 과거에 됐던 이유는 1_EditionSet_기획세트 로직을 처리할 때 또 모든 폴더를 다시 한 번 처리하는 로직이 추가되어서,
         ### 이미 스킵한 폴더도 다시 타게 되어버린 것
