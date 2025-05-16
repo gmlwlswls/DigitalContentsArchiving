@@ -128,7 +128,6 @@ class DigitalContentsArchiving() :
                                 mod_time = datetime.datetime.fromtimestamp(os.path.getmtime(src_path)).strftime('%Y%m%d')
                                 doc_match = re.match(r'(DOC\d+)_', file)
                                 doc_number = doc_match.group(1) if doc_match else ""
-                                print(doc_number)
                                 new_name = f"{doc_number}_{folder_name}_{mod_time}"
 
                                 ext = os.path.splitext(file)[1]
@@ -162,7 +161,8 @@ class DigitalContentsArchiving() :
         # ProductLine 폴더 내 ProductName 폴더 찾기
         elif os.path.isdir(product_line_path):
             for product_name in os.listdir(product_line_path):
-                if product_name == '1_DiscontinuedProduct_단종제품' :
+                added_depth_folderlist = ['1_DiscontinuedProduct_단종제품', 'NorthAmerica_북미', 'Europe_유럽', 'UnitedKingdom_영국', 'OverseasOther_해외기타']
+                if product_name in added_depth_folderlist :
                     discontinued_folder_path = os.path.join(product_line_path, product_name)
                     for discontinued_product_name in os.listdir(discontinued_folder_path) :
                         print(f"Renaming:", {discontinued_product_name})
@@ -172,11 +172,6 @@ class DigitalContentsArchiving() :
                     product_name_path = os.path.join(product_line_path, product_name)
                     print(f"Renaming: {product_name}")
                     self.__renameHelp(product_name_path, product_name)
-                    # if os.path.isdir(product_name_path) :
-                    #     for product_type in os.listdir(product_name_path) :
-                    #         product_type_path = os.path.join(product_name_path, product_type)
-                    #         print(f"Renaming: {product_name}")                        
-                    #         self.__renameHelp(product_type_path, product_name)
         ### elif문을 추가안해서 product_line == 0_BrandAsset_브랜드자산"에서 skipping한 후 다음 작업 실행한 것
         ### 과거에 됐던 이유는 1_EditionSet_기획세트 로직을 처리할 때 또 모든 폴더를 다시 한 번 처리하는 로직이 추가되어서,
         ### 이미 스킵한 폴더도 다시 타게 되어버린 것
