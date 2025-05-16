@@ -161,13 +161,31 @@ class DigitalContentsArchiving() :
         # ProductLine 폴더 내 ProductName 폴더 찾기
         elif os.path.isdir(product_line_path):
             for product_name in os.listdir(product_line_path):
-                added_depth_folderlist = ['1_DiscontinuedProduct_단종제품', 'NorthAmerica_북미', 'Europe_유럽', 'UnitedKingdom_영국', 'OverseasOther_해외기타']
-                if product_name in added_depth_folderlist :
+                overseas_folderlist = ['NorthAmerica_북미', 'Europe_유럽', 'UnitedKingdom_영국', 'OverseasOther_해외기타']
+                
+                if product_name == '1_DiscontinuedProduct_단종제품' :
                     discontinued_folder_path = os.path.join(product_line_path, product_name)
                     for discontinued_product_name in os.listdir(discontinued_folder_path) :
                         print(f"Renaming:", {discontinued_product_name})
                         discontinued_product_path = os.path.join(discontinued_folder_path, discontinued_product_name)
                         self.__renameHelp(discontinued_product_path, discontinued_product_name)
+
+                
+                elif product_name in overseas_folderlist :
+                    overseas_name_path = os.path.join(product_line_path, product_name) # 북미
+                    for overseas_product_name in overseas_name_path :
+                        if overseas_product_name == '1_DiscontinuedProduct_단종제품' :
+                            overseas_discontinued_folder_path = os.path.join(product_line_path, overseas_product_name)
+                            for overseas_discontinued_product_name in os.listdir(overseas_discontinued_folder_path) :
+                                print(f"Renaming:", {overseas_discontinued_product_name})
+                                overseas_discontinued_product_path = os.path.join(overseas_discontinued_folder_path, overseas_discontinued_product_name)
+                                self.__renameHelp(overseas_discontinued_product_path, overseas_discontinued_product_name)
+                    
+                        else :
+                            overseas_product_folder_path = os.path.join(overseas_name_path, overseas_product_name)
+                            print(f"Renaming: {overseas_product_name}")
+                            self.__renameHelp(overseas_product_folder_path, overseas_product_name)
+
                 else :
                     product_name_path = os.path.join(product_line_path, product_name)
                     print(f"Renaming: {product_name}")
