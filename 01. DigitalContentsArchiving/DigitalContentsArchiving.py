@@ -47,18 +47,16 @@ class DigitalContentsArchiving() :
           match = re.search(r'(\d+(?:ml|g))', file_name)
           return match.group(1) if match else ""
 
-      def extract_country_keyword(file_name):
-              """ 파일명에서 사용 국가 키워드 추출 """
-              keywords = ['국내', '국내용', '수출용' '해외', '해외용', '중국', '중국용', '국내중국겸용', '일본', '일본용'
-                          '미국', '북미', '북미용', '북미구주', '유럽', '유럽용', '캐나다', '캐나다용', '미국유럽수출용', '불문',
-                          '베트남', '베트남용', '동남아', '동남아시아', '동남아시아용']  # 우선순위 높은 순서로 정렬
-              
-              country_found = [f"_{kw}" for kw in keywords if kw in file_name]
-
-              return ''.join(country_found) if country_found else ''
+    #   def extract_country_keyword(file_name):
+    #           """ 파일명에서 사용 국가 키워드 추출 """
+    #           keywords = ['국내', '국내용', '수출용' '해외', '해외용', '중국', '중국용', '국내중국겸용', '일본', '일본용'
+    #                       '미국', '북미', '북미용', '북미구주', '유럽', '유럽용', '캐나다', '캐나다용', '미국유럽수출용', '불문',
+    #                       '베트남', '베트남용', '동남아', '동남아시아', '동남아시아용']  # 우선순위 높은 순서로 정렬
+    #           country_found = [f"_{kw}" for kw in keywords if kw in file_name]
+    #           return ''.join(country_found) if country_found else ''
           
       def extract_detail_keyword(file_name) :
-                     keywords= ['복수', '단종', '홀리데이', '썸머', 'Holiday', 'Summer', 'holiday', 'summer']
+                     keywords= ['복수', '단종']
                      for keyword in keywords :
                        if keyword in file_name :
                          return f"_{keyword}"
@@ -82,13 +80,13 @@ class DigitalContentsArchiving() :
               volume_suffix = f"_{volume_info}" if volume_info else ""
 
               # 사용 국가 키워드 추출
-              country_suffix = extract_country_keyword(file)
+            #   country_suffix = extract_country_keyword(file)
 
               # 복수 제품 키워드 추출
               dozen_suffix = extract_detail_keyword(file)
               
               # 새로운 파일명 생성
-              new_name = f"{doc_number}_{product_name}{volume_suffix}_{folder_name}_{mod_time}{country_suffix}{dozen_suffix}"
+              new_name = f"{doc_number}_{product_name}{volume_suffix}_{folder_name}_{mod_time}{dozen_suffix}" # {country_suffix}
 
               ext = os.path.splitext(file)[1]
               count = file_dates.get(new_name, 0) + 1
@@ -172,12 +170,12 @@ class DigitalContentsArchiving() :
 
                 
                 elif product_name in overseas_folderlist :
-                    overseas_name_path = os.path.join(product_line_path, product_name) # 북미
+                    overseas_name_path = os.path.join(product_line_path, product_name) 
                     for overseas_product_name in overseas_name_path :
                         if overseas_product_name == '1_DiscontinuedProduct_단종제품' :
-                            overseas_discontinued_folder_path = os.path.join(product_line_path, overseas_product_name)
+                            overseas_discontinued_folder_path = os.path.join(overseas_name_path, overseas_product_name)
                             for overseas_discontinued_product_name in os.listdir(overseas_discontinued_folder_path) :
-                                print(f"Renaming:", {overseas_discontinued_product_name})
+                                print(f"Renaming: {overseas_discontinued_product_name}")
                                 overseas_discontinued_product_path = os.path.join(overseas_discontinued_folder_path, overseas_discontinued_product_name)
                                 self.__renameHelp(overseas_discontinued_product_path, overseas_discontinued_product_name)
                     
