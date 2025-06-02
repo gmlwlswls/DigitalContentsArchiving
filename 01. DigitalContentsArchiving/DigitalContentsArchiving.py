@@ -174,50 +174,45 @@ class OperatorTask() :
                             self.__renameHelp(product_name_path, product_name)
 
 
-    # 3. 기존 csv파일과 문서 번호 매치한 병합 csv파일 생성
-    # - 이사한 데이터 문서 번호 / 파일명 / 폴더 경로 로 csv 파일 생성
-    # ** 매치되지 않은 파일은 그대로 > 이사 제외 사유 기입
-    def foldertree_to_xlsx_merge_by_doc(self, existing_xlsx_path, output_xlsx_path_filename =None): 
-      """
-      기존 xlsx 파일과 폴더 정보(문서번호/파일명/폴더경로)를 '문서번호' 기준으로 병합하여 저장
-      """
-      # 기존 xlsx 불러오기
-      existing_xlsx = pd.read_excel(existing_xlsx_path)
-      root_dir = self.base_path
-      file_data = []
-      for product_line in os.listdir(root_dir): 
-          product_line_path = os.path.join(root_dir, product_line)
-          if os.path.isdir(product_line_path):
-              for depth_1st in os.listdir(product_line_path): # depth_1st
-                  depth_1st_path = os.path.join(product_line_path, depth_1st)
-                  for folder_path, _, files in os.walk(depth_1st_path):
-                      for file in files:
-                          file_name, ext = os.path.splitext(file)
-                          parts = file_name.split("_", 1)
-                          if len(parts) >= 2:
-                              doc_number = parts[0]
-                              real_name = "_".join(parts[1:]) + ext
-                          else:
-                              doc_number = ""
-                              real_name = file
-                          file_data.append([doc_number, real_name, folder_path])
-      df_folder = pd.DataFrame(file_data, columns=["문서 번호_구글", "(신)파일명", "폴더 경로"])
-      # 병합: 문서번호 기준으로 left join
-      df_merged = pd.merge(existing_xlsx, df_folder, left_on="문서 번호", right_on= '문서 번호_구글', how="left")
-      # 저장 경로 지정
-      if not output_xlsx_path_filename:
-          output_xlsx_path_filename = os.path.join(root_dir, "merged_naver_google.csv")
-      df_merged.to_excel(output_xlsx_path_filename, index=False)
-      print(f"✅ 병합된 xlsx 파일 생성 완료: {output_xlsx_path_filename}")
+    # 3. 기존 xlsx파일과 문서 번호를 활용하여 매치한 병합 xlsx파일 생성
+    def foldertree_to_xlsx_merge_by_doc(self, naver_drive_xlsx_path_filename, output_xlsx_path_filename =None): 
+        """
+        기존 xlsx 파일과 폴더 정보(문서번호/파일명/폴더경로)를 '문서번호' 기준으로 병합하여 저장
+        """
+        # 기존 xlsx 불러오기
+        existing_xlsx = pd.read_excel(naver_drive_xlsx_path_filename)
+        root_dir = self.base_path
+        file_data = []
+        if os.path.isdir(root_dir) :
+            for folder_path, _, files in os.walk(root_dir) :
+                for file in files :
+                    file_name, ext = os.path.splitext(file)
+                    filename_parts = file_name.split("_", 1)
+                    if len(filename_parts) >= 2 :
+                        doc_number = filename_parts[0]
+                        real_name = "_".join(filename_parts[1:]) + ext
+                    else :
+                        doc_number = ""
+                        real_name = file
+                    file_data.append([doc_number, real_name, folder_path])
+            df_for_merge = pd.DataFrame(file_data, columns= ['문서 번호_구글', '(신)파일명', '폴더 경로'])
+            # 병합 : 문서 번호 기준으로 left join
+            df_merged = pd.merge(existing_xlsx, df_for_merge, left_on= '문서 번호', right_on= '문서 번호_구글', how= 'left')
+            # 저장 경로 지정
+            if not output_xlsx_path_filename :
+                output_xlsx_path_filename = os.path.join(root_dir, 'merged_naver_google.xlsx')
+            df_merged.to_excel(output_xlsx_path_filename, index= False)
+            print(f"✅ 병합된 xlsx 파일 생성 완료: {output_xlsx_path_filename}")
 
-    # 5. 최종 업로드 전 문서 번호 제거
-    def __removeDocNumHelp(self, root_dir):
+
+    # 4. 최종 업로드 전 문서 번호 제거
+    def __removeDocNumHelp(self, remove_doc_num_path):
        """
        파일명 앞의 문서번호 (예: DOC00001_) 를 제거하고
-       같은 이름 존재 시 _(1), _(2) ... 붙여 중복 방지
+       같은 이름 존재 시 _1, _2 ... 붙여 중복 방지
        """
        renamed_count = 0
-       for folder_path, _, files in os.walk(root_dir):
+       for folder_path, _, files in os.walk(remove_doc_num_path):
            for file in files:
               # 정규표현식으로 DOCxxx_ 패턴 추출
               match = re.match(r'^(DOC\d+_)(.+)', file)
@@ -227,75 +222,57 @@ class OperatorTask() :
                   base_name, ext = os.path.splitext(rest_of_name)
                   new_path = os.path.join(folder_path, rest_of_name)
                   counter = 1
-                  # 파일명이 이미 존재하면 _(1), _(2) 붙여서 충돌 방지
+                  # 파일명이 이미 존재하면 _1, _2 붙여서 충돌 방지
                   while os.path.exists(new_path):
-                      new_name = f"{base_name}_({counter}){ext}"
+                      new_name = f"{base_name}_{counter}{ext}"
                       new_path = os.path.join(folder_path, new_name)
                       counter += 1
                   os.rename(old_path, new_path)
                   renamed_count += 1
                   print(f"🔁 Renamed: {file} → {os.path.basename(new_path)}")
        print(f"✅ 문서번호 제거 완료: 총 {renamed_count}개 파일 이름 변경됨")
-    def removeDocNum(self): # DocNum 제거 후 파일명 동일한 경우 (1) (2)
-        for product_line in os.listdir(self.base_path):
-          product_line_path = os.path.join(self.base_path, product_line)
-          if product_line == "0_BrandAsset_브랜드자산":
-              for content_type in os.listdir(product_line_path) :
-                  content_type_path = os.path.join(product_line_path, content_type)
-                  print(f"Renaming : 0_BrandAsset - {content_type}")    
-                  self.__removeDocNumHelp(content_type_path)
-          if product_line == '1_EditionSet_기획세트' :
-              if os.path.isdir(product_line_path):
-                  for year in os.listdir(product_line_path):
-                      year_path = os.path.join(product_line_path, year)
-                      if os.path.isdir(year_path) :
-                          for plan_type in os.listdir(year_path) : # 채널 / 시즌
-                              plan_type_path = os.path.join(year_path, plan_type)
-                              if os.path.isdir(plan_type_path) :
-                                  for edition_type in os.listdir(plan_type_path) :
-                                      edition_type_path = os.path.join(plan_type_path, edition_type)
-                                      print(f"Renaming: {edition_type}")                 
-                                      self.__removeDocNumHelp(edition_type_path, edition_type)
-          # ProductLine 폴더 내 ProductName 폴더 찾기
-          if os.path.isdir(product_line_path):
-              for product_name in os.listdir(product_line_path):
-                  product_name_path = os.path.join(product_line_path, product_name)
-                  print(f"Removing_DocNum: {product_name}")
-                  self.__removeDocNumHelp(product_name_path)
 
-#   # 문서 번호 복원 원할 경우 - 테스트 필요
-# def restore_original_filenames(self, merged_naver_google_xlsx_path):
-#     """
-#     문서번호 제거 및 원래 파일명 복원
-#     mapping_csv_path: (문서 번호, (구)파일명, 폴더 경로) 정보가 담긴 csv
-#     """
-#     df = pd.read_excel(merged_naver_google_xlsx_path, index = False)
-#     restored_count = 0
+    def removeDocNum(self):
+        root_dir = self.base_path
+        if os.path.isdir(root_dir) :
+            for product_line in os.listdir(root_dir) :
+                product_line_path = os.path.join(root_dir, product_line)
+                print(f"Removing_DocNum : {product_line}")
+                self.__removeDocNumHelp(product_line_path)
 
-#     for _, row in df.iterrows():
-#         doc_num = str(row['문서 번호']).strip()
-#         old_name = str(row['(구)파일명']).strip()
-#         folder_path = row['폴더 경로'].strip()
-        
-#         # 현재 파일명 (문서번호로 시작하는 파일)
-#         current_file_pattern = f"{doc_num}_{old_name}"
-#         current_path = os.path.join(folder_path, current_file_pattern)
+    # # 기타) 문서 번호 복원 원할 경우 - 테스트 필요
+    # def restore_original_filenames(self, merged_naver_google_xlsx_path):
+    #     """
+    #     문서번호 제거 및 원래 파일명 복원
+    #     mapping_csv_path: (문서 번호, (구)파일명, 폴더 경로) 정보가 담긴 csv
+    #     """
+    #     df = pd.read_excel(merged_naver_google_xlsx_path, index = False)
+    #     restored_count = 0
+   
+    #     for _, row in df.iterrows():
+    #         doc_num = str(row['문서 번호']).strip()
+    #         old_name = str(row['(구)파일명']).strip()
+    #         folder_path = row['폴더 경로'].strip()
+    #       # 
+    #         # 현재 파일명 (문서번호로 시작하는 파일)
+    #         current_file_pattern = f"{doc_num}_{old_name}"
+    #         current_path = os.path.join(folder_path, current_file_pattern)
+  
+    #         if os.path.exists(current_path):
+    #             new_path = os.path.join(folder_path, old_name)
+    #             counter = 1
+   
+    #             # 중복 방지용 이름 만들기
+    #             while os.path.exists(new_path):
+    #                 base, ext = os.path.splitext(old_name)
+    #                 new_name = f"{base}_({counter}){ext}"
+    #                 new_path = os.path.join(folder_path, new_name)
+    #                 counter += 1
 
-#         if os.path.exists(current_path):
-#             new_path = os.path.join(folder_path, old_name)
-#             counter = 1
-
-#             # 중복 방지용 이름 만들기
-#             while os.path.exists(new_path):
-#                 base, ext = os.path.splitext(old_name)
-#                 new_name = f"{base}_({counter}){ext}"
-#                 new_path = os.path.join(folder_path, new_name)
-#                 counter += 1
-
-#             os.rename(current_path, new_path)
-#             restored_count += 1
-#             print(f"🔁 Restored: {current_file_pattern} → {os.path.basename(new_path)}")
-#         else:
-#             print(f"⚠️ 파일 없음: {current_file_pattern}")
-
-#     print(f"✅ 원래 파일명 복원 완료: 총 {restored_count}개 파일 변경됨")
+    #             os.rename(current_path, new_path)
+    #             restored_count += 1
+    #             print(f"🔁 Restored: {current_file_pattern} → {os.path.basename(new_path)}")
+    #         else:
+    #             print(f"⚠️ 파일 없음: {current_file_pattern}")
+ 
+    #     print(f"✅ 원래 파일명 복원 완료: 총 {restored_count}개 파일 변경됨")
