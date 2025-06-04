@@ -14,8 +14,7 @@
 <summary>📁 00. 폴더 트리 변경 - 폴더 트리 구조 변경으로 인한 작업 코드</summary>
 
 - 📄 <code>OrganizeProductFolder.ipynb</code> : 폴더 생성/삭제 & 파일 이동
-- 📄 <code>Replace_ContentTypeClean.ipynb</code> : Belif_Clean용 함수 - ContentTypeClean 폴더 이동 및 기존 폴더 구조 삭제
-- 📄 <code>Replace_ProductTypeClean.ipynb</code> :  Belif_Clean용 함수 - ProductTypeClean 폴더 이동 및 기존 폴더 구조 삭제
+- 📄 <code>Changes_in_FolderTree.ipynb</code> : Belif_Clean용 함수 - ContentTypeClean 폴더 이동 및 기존 폴더 구조 삭제 + 변경 사항 발생 시 수정 코드
 </details>
 
 <details>
@@ -26,11 +25,9 @@
 <summary>📁 02. merged_csv - 문서 번호 기준 병합 자료 </summary>
 </details>
 
-- 🐍 <code><a href="./01. 디지털컨텐츠아카이빙/DigitalContentsArchiving.py">DigitalContentsArchiving.py</a></code> : 전체 아카이빙 프로세스를 구현한 파이썬 클래스 코드
-- 🐍 <code><a href="./01. 디지털컨텐츠아카이빙/DigitalContentsArchiving_ProductType.py">DigitalContentsArchiving_ProductType.py</a></code> : 전체 아카이빙 프로세스를 구현한 파이썬 클래스 코드 -'ProductType' 뎁스 추가로 인한 수정된 코드
-- 📘 <code><a href="./01. 디지털컨텐츠아카이빙/DigitalContentsArchiving_test.ipynb">DigitalContentsArchiving_test.ipynb_</a></code> : 전체 아카이빙 프로세스 구현 위한 주피터 노트북 코드
+- 🐍 <code><a href="./01. 디지털컨텐츠아카이빙/DigitalContentsArchiving.py">DigitalContentsArchiving.py</a></code> : 오퍼레이터 업무 자동화한 파이썬 클래스 코드
+- 📘 <code><a href="./01. 디지털컨텐츠아카이빙/DigitalContentsArchiving_test.ipynb">DigitalContentsArchiving_test.ipynb_</a></code> : 전체 아카이빙 프로세스 테스트 위한 주피터 노트북 코드
 - 📘 <code><a href="./01. 디지털컨텐츠아카이빙/Execution.ipynb">Execution.ipynb</a></code> : 폴더 작업별 실행
-- 📘 <code><a href="./01. 디지털컨텐츠아카이빙/X_Assign&Rename.ipynb">X_Assign&Rename.ipynb</a></code> : 문서 번호 부여 & 파일명 변경
 
 </details>
 
