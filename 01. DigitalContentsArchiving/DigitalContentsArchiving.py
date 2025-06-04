@@ -147,7 +147,7 @@ class OperatorTask() :
             else :
                 if os.path.isdir(product_line_path) :
                     for product_name in os.listdir(product_line_path):
-                        overseas_folderlist = ['1_NorthAmerica_북미', '2_Europe_유럽', '3_UnitedKingdom_영국', '4_OverseasOther_해외기타']           
+                        overseas_folderlist = ['1_NorthAmerica_북미', '2_Europe_유럽', '3_UnitedKingdom_영국', '4_OverseasOther_해외기타', 'NorthAmerica_북미', 'Europe_유럽', 'UnitedKingdom_영국', 'OverseasOther_해외기타']           
                         if product_name == '1_DiscontinuedProduct_단종제품' :
                             discontinued_folder_path = os.path.join(product_line_path, product_name)
                             for discontinued_product_name in os.listdir(discontinued_folder_path) :
