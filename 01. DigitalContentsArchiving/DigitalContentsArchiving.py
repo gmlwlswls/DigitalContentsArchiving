@@ -55,7 +55,7 @@ class OperatorTask() :
             return ''.join(country_found) if country_found else ''
         
         def extract_detail_keyword(file_name) :
-            keywords= ['복수', '단종']
+            keywords= ['복수', '단종', 'en'] # 영문 번역본 파악
             for keyword in keywords :
                 if keyword in file_name :
                     return f"_{keyword}"
@@ -97,21 +97,23 @@ class OperatorTask() :
                       # src_path == new_path인 경우(이름 변경 필요 없음)
                       pass
 
-            else :
-                new_name_key = f"{product_name}{volume_suffix}_{folder_name}_{mod_time}{country_suffix}{dozen_suffix}{ext}"
-                count = file_dates.get(new_name_key, 0) + 1
-                file_dates[new_name_key] = count                    
-                new_name = f"{product_name}{volume_suffix}_{folder_name}_{mod_time}{country_suffix}{dozen_suffix}"
-                new_file_name = f"{doc_number}_{new_name}_{count}{ext}" if count > 1 else f"{doc_number}_{new_name}{ext}"
-                new_path = os.path.join(root, new_file_name)
-                # 파일 중복의 경우(DOC_파일명이면 여러 번 이사한 상태)
-                if src_path != new_path:
-                    if os.path.exists(new_path):
-                        os.remove(new_path)
-                    os.rename(src_path, new_path)
                 else :
-                    # src_path == new_path인 경우(이름 변경 필요 없음)
-                    pass
+                    new_name_key = f"{product_name}{volume_suffix}_{folder_name}_{mod_time}{country_suffix}{dozen_suffix}{ext}"
+                    count = file_dates.get(new_name_key, 0) + 1
+                    file_dates[new_name_key] = count                    
+
+                    new_name = f"{product_name}{volume_suffix}_{folder_name}_{mod_time}{country_suffix}{dozen_suffix}"
+                    new_file_name = f"{doc_number}_{new_name}_{count}{ext}" if count > 1 else f"{doc_number}_{new_name}{ext}"
+                    new_path = os.path.join(root, new_file_name)
+
+                    # 파일 중복의 경우(DOC_파일명이면 여러 번 이사한 상태)
+                    if src_path != new_path:
+                        if os.path.exists(new_path):
+                            os.remove(new_path)
+                        os.rename(src_path, new_path)
+                    else :
+                        # src_path == new_path인 경우(이름 변경 필요 없음)
+                        pass
 
     def rename(self) :
         for product_line in os.listdir(self.base_path):
